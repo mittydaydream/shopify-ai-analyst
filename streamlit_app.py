@@ -110,55 +110,27 @@ if st.button("Generate Analysis"):
             api_key = st.secrets["ANTHROPIC_API_KEY"]
             model = st.secrets.get("CLAUDE_MODEL", "claude-3-5-haiku-latest")
 
-            client = Anthropic(api_key=api_key)
+api_key = st.secrets["OPENAI_API_KEY"]
+model = st.secrets.get("OPENAI_MODEL", "gpt-5-mini")
 
-            prompt = f"""
-You are a senior e-commerce operations analyst.
+client = OpenAI(api_key=api_key)
 
-The user operates multiple Shopify stores and wants practical business insights.
+response = client.chat.completions.create(
+    model=model,
+    messages=[
+        {
+            "role": "system",
+            "content": "You are a senior ecommerce operations analyst."
+        },
+        {
+            "role": "user",
+            "content": prompt
+        }
+    ]
+)
 
-Please analyze the uploaded data.
-
-Store / Brand:
-{store_name}
-
-Analysis Period:
-{analysis_period}
-
-Analysis Type:
-{analysis_type}
-
-Data:
-{data_summary}
-
-Please output the report in Chinese.
-
-Report structure:
-1. 核心结论
-2. 销售表现
-3. 流量与转化率表现
-4. 产品表现
-5. SEO / 页面表现
-6. 发现的问题
-7. 优先级行动清单
-8. 下周建议
-
-Please be practical, specific, and suitable for a Shopify operator.
-If the data is incomplete, clearly explain what is missing.
-"""
-
-            prompt = clean_text(prompt)
-
-            message = client.messages.create(
-                model=model,
-                max_tokens=3000,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ]
-            )
-
-            st.subheader("Claude Analysis Report")
-            st.write(message.content[0].text)
+st.subheader("AI Analysis Report")
+st.write(response.choices[0].message.content)
 
         except Exception as e:
             st.error(f"Error: {e}")
