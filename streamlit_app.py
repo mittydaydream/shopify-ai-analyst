@@ -37,6 +37,13 @@ gsc_file = st.file_uploader("Upload Search Console CSV", type=["csv"])
 data_summary = ""
 
 
+def clean_text(value):
+    text = str(value)
+    text = text.encode("utf-8", errors="ignore").decode("utf-8", errors="ignore")
+    text = text.replace("\x00", "")
+    return text
+
+
 def summarize_csv(file, name):
     if file is None:
         return ""
@@ -60,9 +67,14 @@ def summarize_csv(file, name):
                 on_bad_lines="skip"
             )
 
+        df = df.astype(str).map(clean_text)
+
         st.subheader(name)
         st.write(f"Rows: {len(df)} | Columns: {len(df.columns)}")
         st.dataframe(df.head(20))
+
+        safe_sample = df.head(20).to_string()
+        safe_sample = clean_text(safe_sample)
 
         summary = f"""
 {name}
@@ -74,7 +86,7 @@ Rows:
 {len(df)}
 
 Sample Data:
-{df.head(20).to_string()}
+{safe_sample}
 """
 
         return summary
@@ -134,6 +146,8 @@ Report structure:
 Please be practical, specific, and suitable for a Shopify operator.
 If the data is incomplete, clearly explain what is missing.
 """
+
+            prompt = clean_text(prompt)
 
             message = client.messages.create(
                 model=model,
