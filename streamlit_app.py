@@ -5,7 +5,7 @@ from openai import OpenAI
 st.set_page_config(page_title="AI Multi-Store Analyst", layout="wide")
 
 st.title("AI Multi-Store Analyst")
-st.write("Upload Shopify / GA4 / Search Console CSV files and let Claude generate an operations analysis report.")
+st.write("Upload Shopify / GA4 / Search Console CSV files and let GPT generate an operations analysis report.")
 
 st.sidebar.header("Settings")
 
@@ -73,8 +73,7 @@ def summarize_csv(file, name):
         st.write(f"Rows: {len(df)} | Columns: {len(df.columns)}")
         st.dataframe(df.head(20))
 
-        safe_sample = df.head(20).to_string()
-        safe_sample = clean_text(safe_sample)
+        safe_sample = clean_text(df.head(20).to_string())
 
         summary = f"""
 {name}
@@ -88,7 +87,6 @@ Rows:
 Sample Data:
 {safe_sample}
 """
-
         return summary
 
     except Exception as e:
@@ -100,37 +98,62 @@ data_summary += summarize_csv(shopify_file, "Shopify Data")
 data_summary += summarize_csv(ga4_file, "GA4 Data")
 data_summary += summarize_csv(gsc_file, "Search Console Data")
 
-st.header("2. Generate Claude Analysis")
+st.header("2. Generate GPT Analysis")
 
 if st.button("Generate Analysis"):
     if not data_summary:
         st.warning("Please upload at least one CSV file.")
     else:
         try:
-            api_key = st.secrets["ANTHROPIC_API_KEY"]
-            model = st.secrets.get("CLAUDE_MODEL", "claude-3-5-haiku-latest")
+            api_key = st.secrets["OPENAI_API_KEY"]
+            model = st.secrets.get("OPENAI_MODEL", "gpt-5-mini")
 
-api_key = st.secrets["OPENAI_API_KEY"]
-model = st.secrets.get("OPENAI_MODEL", "gpt-5-mini")
+            client = OpenAI(api_key=api_key)
 
-client = OpenAI(api_key=api_key)
+            prompt = f"""
+You are a senior e-commerce operations analyst.
 
-response = client.chat.completions.create(
-    model=model,
-    messages=[
-        {
-            "role": "system",
-            "content": "You are a senior ecommerce operations analyst."
-        },
-        {
-            "role": "user",
-            "content": prompt
-        }
-    ]
-)
+The user operates multiple Shopify stores and wants practical business insights.
 
-st.subheader("AI Analysis Report")
-st.write(response.choices[0].message.content)
+Please analyze the uploaded data.
+
+Store / Brand:
+{store_name}
+
+Analysis Period:
+{analysis_period}
+
+Analysis Type:
+{analysis_type}
+
+Data:
+{data_summary}
+
+Please output the report in Chinese.
+
+Report structure:
+1. 核心结论
+2. 销售表现
+3. 流量与转化率表现
+4. 产品表现
+5. SEO / 页面表现
+6. 发现的问题
+7. 优先级行动清单
+8. 下周建议
+
+Please be practical, specific, and suitable for a Shopify operator.
+If the data is incomplete, clearly explain what is missing.
+"""
+
+            prompt = clean_text(prompt)
+
+            response = client.responses.create(
+                model=model,
+                input=prompt
+            )
+
+            st.subheader("GPT Analysis Report")
+            st.write(response.output_text)
 
         except Exception as e:
             st.error(f"Error: {e}")
