@@ -63,6 +63,8 @@ Rows: {len(df)}
 Sample Data:
 {df.head(20).to_string()}
 """
+
+        return summary
         return summary
 
     return ""
