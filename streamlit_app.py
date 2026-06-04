@@ -37,9 +37,35 @@ data_summary = ""
 
 def summarize_csv(file, name):
     if file is not None:
-        df = pd.read_csv(file)
+        try:
+            file.seek(0)
+            df = pd.read_csv(file, sep=None, engine="python", encoding="utf-8-sig")
+        except Exception:
+            try:
+                file.seek(0)
+                df = pd.read_csv(file, sep=",", engine="python", encoding="utf-8-sig", on_bad_lines="skip")
+            except Exception:
+                try:
+                    file.seek(0)
+                    df = pd.read_csv(file, sep="\t", engine="python", encoding="utf-8-sig", on_bad_lines="skip")
+                except Exception as e:
+                    st.error(f"{name} 文件读取失败，请检查是否为 CSV 文件。错误信息：{e}")
+                    return ""
+
         st.subheader(name)
+        st.write(f"Rows: {len(df)} | Columns: {len(df.columns)}")
         st.dataframe(df.head(20))
+
+        summary = f"""
+{name}
+Columns: {list(df.columns)}
+Rows: {len(df)}
+Sample Data:
+{df.head(20).to_string()}
+"""
+        return summary
+
+    return ""
         summary = f"""
 {name}
 Columns: {list(df.columns)}
