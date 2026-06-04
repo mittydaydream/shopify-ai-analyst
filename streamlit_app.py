@@ -5,11 +5,12 @@ from anthropic import Anthropic
 st.set_page_config(page_title="AI Multi-Store Analyst", layout="wide")
 
 st.title("AI Multi-Store Analyst")
-st.write("Upload Shopify / GA4 / SEO CSV files and let Claude generate an operations analysis report.")
+st.write("Upload Shopify / GA4 / Search Console CSV files and let Claude generate an operations analysis report.")
 
 st.sidebar.header("Settings")
 
 store_name = st.sidebar.text_input("Store / Brand Name", "Pinty")
+
 analysis_period = st.sidebar.selectbox(
     "Analysis Period",
     ["Yesterday", "Last 7 Days", "Last 30 Days", "Custom"]
@@ -35,22 +36,29 @@ gsc_file = st.file_uploader("Upload Search Console CSV", type=["csv"])
 
 data_summary = ""
 
+
 def summarize_csv(file, name):
-    if file is not None:
+    if file is None:
+        return ""
+
+    try:
+        file.seek(0)
+
         try:
-            file.seek(0)
-            df = pd.read_csv(file, sep=None, engine="python", encoding="utf-8-sig")
+            df = pd.read_csv(
+                file,
+                sep=None,
+                engine="python",
+                encoding="utf-8-sig"
+            )
         except Exception:
-            try:
-                file.seek(0)
-                df = pd.read_csv(file, sep=",", engine="python", encoding="utf-8-sig", on_bad_lines="skip")
-            except Exception:
-                try:
-                    file.seek(0)
-                    df = pd.read_csv(file, sep="\t", engine="python", encoding="utf-8-sig", on_bad_lines="skip")
-                except Exception as e:
-                    st.error(f"{name} 文件读取失败，请检查是否为 CSV 文件。错误信息：{e}")
-                    return ""
+            file.seek(0)
+            df = pd.read_csv(
+                file,
+                engine="python",
+                encoding="utf-8-sig",
+                on_bad_lines="skip"
+            )
 
         st.subheader(name)
         st.write(f"Rows: {len(df)} | Columns: {len(df.columns)}")
@@ -58,25 +66,23 @@ def summarize_csv(file, name):
 
         summary = f"""
 {name}
-Columns: {list(df.columns)}
-Rows: {len(df)}
+
+Columns:
+{list(df.columns)}
+
+Rows:
+{len(df)}
+
 Sample Data:
 {df.head(20).to_string()}
 """
 
         return summary
-        return summary
 
-    return ""
-        summary = f"""
-{name}
-Columns: {list(df.columns)}
-Rows: {len(df)}
-Sample Data:
-{df.head(20).to_string()}
-"""
-        return summary
-    return ""
+    except Exception as e:
+        st.error(f"{name} 文件读取失败: {e}")
+        return ""
+
 
 data_summary += summarize_csv(shopify_file, "Shopify Data")
 data_summary += summarize_csv(ga4_file, "GA4 Data")
