@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from anthropic import Anthropic
+from openai import OpenAI
 
 st.set_page_config(page_title="AI Multi-Store Analyst", layout="wide")
 
